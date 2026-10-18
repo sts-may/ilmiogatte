@@ -5,8 +5,8 @@ from datetime import datetime
 from telebot import types
 
 # ===== НАСТРОЙКИ (берём из переменных окружения) =====
-BOT_TOKEN = os.environ["8676158894:AAFD8B8SRqzog47litgoL8x_FttEYxmHTAI"]
-CHAT_ID   = os.environ["656506167"]
+BOT_TOKEN = os.environ["BOT_TOKEN"]
+CHAT_ID   = os.environ["CHAT_ID"]
 
 TARGET_DATE = datetime(2026, 11, 3, 20, 40)
 
