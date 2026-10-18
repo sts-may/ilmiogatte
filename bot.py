@@ -84,7 +84,7 @@ def send_countdown(chat_id):
 
 def make_keyboard():
     kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    kb.add(types.KeyboardButton("🔄 Обновить"))
+    kb.add(types.KeyboardButton("Сколько осталось?<3"))
     return kb
 
 @bot.message_handler(commands=['start'])
