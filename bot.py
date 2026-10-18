@@ -1,16 +1,15 @@
+import os
 import telebot
 import random
-import os
+import threading
 from datetime import datetime
 from telebot import types
 from flask import Flask
-import threading
-import time
 
 # ===== НАСТРОЙКИ =====
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 CHAT_ID = os.environ["CHAT_ID"]
-TARGET_DATE = datetime(2025, 12, 31, 19, 0)
+TARGET_DATE = datetime(2026, 11, 3, 20, 40)
 
 PHOTOS = [
     "https://i.pinimg.com/1200x/e7/ec/62/e7ec625ab06ad88984f8f2875a8f61ab.jpg",
@@ -53,6 +52,7 @@ PHOTOS = [
     "https://i.pinimg.com/736x/c6/8d/ed/c68deda15284db05766f94697408884a.jpg",
     # Добавляй сколько хочешь!
 ]
+
 bot = telebot.TeleBot(BOT_TOKEN)
 
 def plural(n, forms):
@@ -71,10 +71,10 @@ def build_message():
     h = (total % 86400) // 3600
     m = (total % 3600) // 60
     if d > 0:
-        return f"💕 Осталось:\n🗓 {d} {plural(d, ('день', 'дня', 'дней'))}\n⏰ {h} {plural(h, ('час', 'часа', 'часов'))}\n⏳ {m} {plural(m, ('минута', 'минуты', 'минут'))}"
+        return f"💕 Осталось:\n🗓 {d} {plural(d, ('день', 'дня', 'дней'))}\n⏰ {h} {plural(h, ('час', 'часа', 'часов'))}\n {m} {plural(m, ('минута', 'минуты', 'минут'))}"
     if h > 0:
-        return f"💕 Осталось:\n⏰ {h} {plural(h, ('час', 'часа', 'часов'))}\n {m} {plural(m, ('минута', 'минуты', 'минут'))}"
-    return f"💕 Осталось:\n {m} {plural(m, ('минута', 'минуты', 'минут'))}\n🔥 Совсем скоро!"
+        return f"💕 Осталось:\n⏰ {h} {plural(h, ('час', 'часа', 'часов'))}\n⏳ {m} {plural(m, ('минута', 'минуты', 'минут'))}"
+    return f"💕 Осталось:\n⏳ {m} {plural(m, ('минута', 'минуты', 'минут'))}\n🔥 Совсем скоро!"
 
 def send_countdown(chat_id):
     try:
@@ -100,26 +100,21 @@ def refresh(message):
 def any_message(message):
     bot.send_message(message.chat.id, "Нажми кнопку 👇", reply_markup=make_keyboard())
 
-# --- FLASK ДЛЯ RENDER ---
+# --- FLASK ---
 app = Flask(__name__)
 
 @app.route('/')
 def home():
     return "Бот работает! 💕"
 
+# Запускаем бота в фоновом потоке
 def run_bot():
-    """Бот запускается в отдельном потоке"""
     print("🤖 Бот запущен!")
     bot.infinity_polling()
 
-# Запускаем бота в фоновом потоке
 threading.Thread(target=run_bot, daemon=True).start()
 
-# Даём боту время стартовать
-time.sleep(2)
-
-# Flask запускается в ОСНОВНОМ потоке на порту Render
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    print(f"🌐 Flask запускается на порту {port}")
-    app.run(host='0.0.0.0', port=port)
+# Запускаем Flask на порту Render
+port = int(os.environ.get("PORT", 10000))
+print(f"🌐 Запускаем Flask на порту {port}")
+app.run(host='0.0.0.0', port=port)
