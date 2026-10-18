@@ -90,9 +90,9 @@ def make_keyboard():
 @bot.message_handler(commands=['start'])
 def start(message):
     bot.send_message(message.chat.id, "Привет! 💕 Нажми кнопку 👇", reply_markup=make_keyboard())
-    send_countdown(message.chat.id)
+    #send_countdown(message.chat.id)
 
-@bot.message_handler(func=lambda m: m.text == "🔄 Обновить")
+@bot.message_handler(func=lambda m: m.text == "Сколько осталось?<3")
 def refresh(message):
     send_countdown(message.chat.id)
 
