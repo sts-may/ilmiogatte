@@ -3,12 +3,14 @@ import random
 import os
 from datetime import datetime
 from telebot import types
+from flask import Flask
+import threading
+import time
 
-# ===== НАСТРОЙКИ (берём из переменных окружения) =====
+# ===== НАСТРОЙКИ =====
 BOT_TOKEN = os.environ["BOT_TOKEN"]
-CHAT_ID   = os.environ["CHAT_ID"]
-
-TARGET_DATE = datetime(2026, 11, 3, 20, 40)
+CHAT_ID = os.environ["CHAT_ID"]
+TARGET_DATE = datetime(2025, 12, 31, 19, 0)
 
 PHOTOS = [
     "https://i.pinimg.com/1200x/e7/ec/62/e7ec625ab06ad88984f8f2875a8f61ab.jpg",
@@ -51,48 +53,28 @@ PHOTOS = [
     "https://i.pinimg.com/736x/c6/8d/ed/c68deda15284db05766f94697408884a.jpg",
     # Добавляй сколько хочешь!
 ]
-
 bot = telebot.TeleBot(BOT_TOKEN)
-
 
 def plural(n, forms):
     n = abs(n)
-    if 11 <= n % 100 <= 14:
-        return forms[2]
+    if 11 <= n % 100 <= 14: return forms[2]
     m = n % 10
-    if m == 1:
-        return forms[0]
-    if 2 <= m <= 4:
-        return forms[1]
+    if m == 1: return forms[0]
+    if 2 <= m <= 4: return forms[1]
     return forms[2]
-
 
 def build_message():
     delta = TARGET_DATE - datetime.now()
     total = int(delta.total_seconds())
-
-    if total <= 0:
-        return "🎉 Сегодня тот самый день! 💕"
-
+    if total <= 0: return "🎉 Сегодня тот самый день! 💕"
     d = total // 86400
     h = (total % 86400) // 3600
     m = (total % 3600) // 60
-
     if d > 0:
-        return (f"💕 Осталось до встречи с тобой:\n"
-                f"🗓 {d} {plural(d, ('день', 'дня', 'дней'))}\n"
-                f"⏰ {h} {plural(h, ('час', 'часа', 'часов'))}\n"
-                f"⏳ {m} {plural(m, ('минута', 'минуты', 'минут'))}")
+        return f"💕 Осталось:\n🗓 {d} {plural(d, ('день', 'дня', 'дней'))}\n⏰ {h} {plural(h, ('час', 'часа', 'часов'))}\n⏳ {m} {plural(m, ('минута', 'минуты', 'минут'))}"
     if h > 0:
-        return (f"💕 Осталось до встречи с тобой:\n"
-                f"⏰ {h} {plural(h, ('час', 'часа', 'часов'))}\n"
-                f"⏳ {m} {plural(m, ('минута', 'минуты', 'минут'))}")
-    if m > 0:
-        return (f"💕 Осталось до встречи с тобой:\n"
-                f"⏳ {m} {plural(m, ('минута', 'минуты', 'минут'))}\n"
-                f"🔥 Совсем скоро!")
-    return "💕 Встреча уже здесь! Я рядом 💕"
-
+        return f"💕 Осталось:\n⏰ {h} {plural(h, ('час', 'часа', 'часов'))}\n {m} {plural(m, ('минута', 'минуты', 'минут'))}"
+    return f"💕 Осталось:\n {m} {plural(m, ('минута', 'минуты', 'минут'))}\n🔥 Совсем скоро!"
 
 def send_countdown(chat_id):
     try:
@@ -100,32 +82,44 @@ def send_countdown(chat_id):
     except Exception as e:
         bot.send_message(chat_id, f"Ошибка: {e}")
 
-
 def make_keyboard():
     kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
     kb.add(types.KeyboardButton("🔄 Обновить"))
     return kb
 
-
 @bot.message_handler(commands=['start'])
 def start(message):
-    bot.send_message(
-        message.chat.id,
-        "Привет! 💕 Нажми кнопку 👇",
-        reply_markup=make_keyboard()
-    )
+    bot.send_message(message.chat.id, "Привет! 💕 Нажми кнопку 👇", reply_markup=make_keyboard())
     send_countdown(message.chat.id)
-
 
 @bot.message_handler(func=lambda m: m.text == "🔄 Обновить")
 def refresh(message):
     send_countdown(message.chat.id)
 
-
 @bot.message_handler(func=lambda m: True)
 def any_message(message):
     bot.send_message(message.chat.id, "Нажми кнопку 👇", reply_markup=make_keyboard())
 
+# --- FLASK ДЛЯ RENDER ---
+app = Flask(__name__)
 
-print("🤖 Бот запущен!")
-bot.infinity_polling()
+@app.route('/')
+def home():
+    return "Бот работает! 💕"
+
+def run_bot():
+    """Бот запускается в отдельном потоке"""
+    print("🤖 Бот запущен!")
+    bot.infinity_polling()
+
+# Запускаем бота в фоновом потоке
+threading.Thread(target=run_bot, daemon=True).start()
+
+# Даём боту время стартовать
+time.sleep(2)
+
+# Flask запускается в ОСНОВНОМ потоке на порту Render
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    print(f"🌐 Flask запускается на порту {port}")
+    app.run(host='0.0.0.0', port=port)
